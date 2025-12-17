@@ -31,15 +31,28 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         String token=tokenHeader.split(" ")[1];
-        String email=authUtils.getEmailFromToken(token);
 
-        if(email!=null && SecurityContextHolder.getContext().getAuthentication()==null){
-            User user=userRepository.findByEmailId(email).orElseThrow();
-            UsernamePasswordAuthenticationToken token1=new UsernamePasswordAuthenticationToken(user, null, List.of()
-            );
-
-            SecurityContextHolder.getContext().setAuthentication(token1);
+        if (!authUtils.isTokenValid(token)) {
+            filterChain.doFilter(request, response);
+            return;
         }
-        filterChain.doFilter(request,response);
+
+        String email = authUtils.getEmailFromToken(token);
+        String role = authUtils.getRoleFromToken(token);
+
+        System.out.println("After jwt verification in JwtAuthFilter: "+role+" "+email);
+        List<SimpleGrantedAuthority> authorities =
+                List.of(new SimpleGrantedAuthority("ROLE_" + role));
+
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        email,
+                        null,
+                        authorities
+                );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        filterChain.doFilter(request, response);
     }
 }

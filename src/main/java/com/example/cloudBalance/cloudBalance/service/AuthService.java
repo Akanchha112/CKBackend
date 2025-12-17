@@ -36,7 +36,7 @@ public class AuthService {
                     (UserDetails) authentication.getPrincipal();
 
             System.out.println("userDetails.getAuthorities(); " + userDetails.getAuthorities());
-            token = authUtils.generateAcessToken(userDetails.getUsername());
+            token = authUtils.generateAcessToken(userDetails);
         }catch (Exception e){
             throw new ApiException(
                     "Invalid email or password",

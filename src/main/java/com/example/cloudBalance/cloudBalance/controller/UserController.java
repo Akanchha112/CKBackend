@@ -12,22 +12,25 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
-//@RequestMapping("/api/users")
+@RequestMapping("/api/users")
 public class UserController {
     @Autowired
     public final UserService userService;
 
-    @PostMapping("/adduser")
+    //admin only
+    @PostMapping
     public ApiResponse<?> addUser(@RequestBody @Valid UserRequest user){
         return userService.addUser(user);
     }
 
-    @GetMapping("/users")
+    //Readonly and admin only
+    @GetMapping
     public ApiResponse<?> getAllUser(){
         return userService.getAllUser();
     }
 
-    @PutMapping("/editUser/{id}")
+    //admin only
+    @PutMapping("/{id}")
     public ApiResponse<?> editUser(@PathVariable Long id,@RequestBody @Valid UpdateUserRequest user){
         return userService.editUser(id,user);
     }

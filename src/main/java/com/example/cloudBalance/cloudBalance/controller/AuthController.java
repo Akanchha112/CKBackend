@@ -1,7 +1,10 @@
 package com.example.cloudBalance.cloudBalance.controller;
 
+import com.example.cloudBalance.cloudBalance.DTO.ApiResponse;
+import com.example.cloudBalance.cloudBalance.DTO.LoginRequest;
 import com.example.cloudBalance.cloudBalance.model.User;
 import com.example.cloudBalance.cloudBalance.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,8 +21,7 @@ public class AuthController {
     private AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<Object> login(@RequestBody User req) {
+    public ApiResponse<?> login(@RequestBody @Valid LoginRequest req) {
         return authService.login(req);
-
     }
 }

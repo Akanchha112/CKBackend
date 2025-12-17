@@ -1,55 +1,87 @@
 package com.example.cloudBalance.cloudBalance.service;
 
+import com.example.cloudBalance.cloudBalance.DTO.UserRequest;
+import com.example.cloudBalance.cloudBalance.DTO.ApiResponse;
+import com.example.cloudBalance.cloudBalance.DTO.UpdateUserRequest;
+import com.example.cloudBalance.cloudBalance.DTO.UserResponse;
+import com.example.cloudBalance.cloudBalance.exception.ApiException;
+import com.example.cloudBalance.cloudBalance.exception.ErrorCode;
+import com.example.cloudBalance.cloudBalance.model.RoleType;
 import com.example.cloudBalance.cloudBalance.model.User;
 import com.example.cloudBalance.cloudBalance.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
-    @Autowired
-    public UserRepository userrepo;
-    @Autowired
-    public PasswordEncoder passwordEncoder;
+    public final UserRepository userrepo;
+    public final PasswordEncoder passwordEncoder;
+    public final DTOtoEntityMapper dtOtoEntityMapper;
 
-
-    public ResponseEntity<Object> addUser(User user){
-        String hashed = passwordEncoder.encode(user.getPassword());
-        user.setPassword(hashed);
-         userrepo.save(user);
-         return new ResponseEntity<>(user.getFirstName(), HttpStatus.CREATED);
-    }
-
-    public ResponseEntity<Object> getAllUser(){
-        List<User> findAll= userrepo.findAll();
-
-        if(findAll.isEmpty()){
-            return new ResponseEntity<>("No User Found",HttpStatus.OK);
-        }
-        return new ResponseEntity<>(findAll,HttpStatus.OK);
-    }
-
-    public ResponseEntity<Object> editUser(Long id,User user){
-        Optional<User> findUser=userrepo.findById(id);
-        if(findUser.isEmpty()){
-            return new ResponseEntity<>(id,HttpStatus.NOT_FOUND);
+    public ApiResponse<?> addUser(UserRequest userRequest){
+        if (userrepo.findByEmailId(userRequest.emailId()).isPresent()) {
+            throw new ApiException(
+                    "Email already exists",
+                    HttpStatus.CONFLICT,
+                    ErrorCode.USER_ALREADY_EXISTS
+            );
         }
 
-        User existingUser=findUser.get();
-        existingUser.setFirstName(user.getFirstName());
-        existingUser.setLastName(user.getLastName());
-        existingUser.setEmailId(user.getEmailId());
-        existingUser.setRole(user.getRole());
-        existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
+        RoleType role = userRequest.role();
 
-        userrepo.save(existingUser);
-        return new ResponseEntity<>(existingUser.getFirstName(),HttpStatus.OK);
+        if (role == null) {
+            throw new ApiException(
+                    "Role is required",
+                    HttpStatus.BAD_REQUEST,
+                    ErrorCode.INVALID_ROLE
+            );
+        }
+        User user=dtOtoEntityMapper.mapToEntity(userRequest);
+        userrepo.save(user);
+        return ApiResponse.success(
+                "User created successfully",
+                dtOtoEntityMapper.mapToResponse(user),
+                HttpStatus.CREATED.value()
+        );
     }
+
+    public ApiResponse<?> getAllUser(){
+        List<UserResponse> users = userrepo.findAll()
+                .stream()
+                .map(dtOtoEntityMapper::mapToResponse)
+                .toList();
+
+        return ApiResponse.success(
+                "Users fetched successfully",
+                users,
+                200
+        );
+    }
+
+    public ApiResponse<?> editUser(Long id, UpdateUserRequest req) {
+
+        User user = userrepo.findById(id)
+                .orElseThrow(() -> new ApiException(
+                        "User does not exist",
+                        HttpStatus.NOT_FOUND,
+                        ErrorCode.USER_NOT_FOUND
+                ));
+
+        dtOtoEntityMapper.updateEntity(user, req, passwordEncoder);
+
+        userrepo.save(user);
+
+        return ApiResponse.success(
+                "User updated successfully",
+                dtOtoEntityMapper.mapToResponse(user),
+                HttpStatus.OK.value()
+        );
+    }
+
 }

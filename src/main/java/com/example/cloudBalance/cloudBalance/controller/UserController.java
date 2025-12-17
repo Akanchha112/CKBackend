@@ -1,10 +1,12 @@
 package com.example.cloudBalance.cloudBalance.controller;
 
-import com.example.cloudBalance.cloudBalance.model.User;
+import com.example.cloudBalance.cloudBalance.DTO.UserRequest;
+import com.example.cloudBalance.cloudBalance.DTO.ApiResponse;
+import com.example.cloudBalance.cloudBalance.DTO.UpdateUserRequest;
 import com.example.cloudBalance.cloudBalance.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,17 +18,17 @@ public class UserController {
     public final UserService userService;
 
     @PostMapping("/adduser")
-    public ResponseEntity<Object> addUser(@RequestBody User user){
+    public ApiResponse<?> addUser(@RequestBody @Valid UserRequest user){
         return userService.addUser(user);
     }
 
     @GetMapping("/users")
-    public ResponseEntity<Object> getAllUser(){
+    public ApiResponse<?> getAllUser(){
         return userService.getAllUser();
     }
 
     @PutMapping("/editUser/{id}")
-    public ResponseEntity<Object> editUser(@PathVariable Long id,@RequestBody User user){
+    public ApiResponse<?> editUser(@PathVariable Long id,@RequestBody @Valid UpdateUserRequest user){
         return userService.editUser(id,user);
     }
 }

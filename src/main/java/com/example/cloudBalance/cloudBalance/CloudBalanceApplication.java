@@ -11,4 +11,9 @@ public class CloudBalanceApplication {
 	public static void main(String[] args) {
         SpringApplication.run(CloudBalanceApplication.class, args);
 	}
+
+    //18th dec - jwt refresh 15 mins
+    //Account
+    //LastLogin
+    //Role table
 }

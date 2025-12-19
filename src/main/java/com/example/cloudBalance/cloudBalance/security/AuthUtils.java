@@ -24,18 +24,14 @@ public class AuthUtils {
         return Keys.hmacShaKeyFor(jwtSecretKey.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateAcessToken(UserDetails userDetails){
-        String role = userDetails.getAuthorities()
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .findFirst()
-                .orElse("CUSTOMER");
+    public String generateAcessToken(User user){
+        String role = String.valueOf(user.getRole());
 
         return Jwts.builder()
-                .setSubject(userDetails.getUsername())
+                .setSubject(user.getEmailId())
                 .claim("role",role)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000*60*60*24))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000*60*5))
                 .signWith(getSecretKey())
                 .compact();
     }

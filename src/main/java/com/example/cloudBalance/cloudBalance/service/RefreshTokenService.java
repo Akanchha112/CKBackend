@@ -2,6 +2,7 @@ package com.example.cloudBalance.cloudBalance.service;
 
 import com.example.cloudBalance.cloudBalance.DTO.ApiResponse;
 import com.example.cloudBalance.cloudBalance.DTO.LoginResponse;
+import com.example.cloudBalance.cloudBalance.DTO.RefreshTokenResponse;
 import com.example.cloudBalance.cloudBalance.exception.ApiException;
 import com.example.cloudBalance.cloudBalance.exception.ErrorCode;
 import com.example.cloudBalance.cloudBalance.model.RefreshToken;
@@ -13,67 +14,47 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {
-
+    String zoneId="Asia/Kolkata";
     private final RefreshTokenRepository repo;
     private final AuthUtils authUtils;
 
+
+
     @Transactional
     public RefreshToken create(User user) {
-       // repo.deleteByUser(user);
-       Optional<RefreshToken> existing = repo.findByUser(user);
-        existing.ifPresent(repo::delete);
-        RefreshToken token = new RefreshToken();
+
+        Optional<RefreshToken> existing = repo.findByUser(user);
+
+        RefreshToken token = existing.orElse(new RefreshToken());
         token.setUser(user);
         token.setToken(UUID.randomUUID().toString());
-        token.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
-        token.setLastActivityAt(Instant.now());
+        token.setExpiresAt(LocalDateTime.now(ZoneId.of(zoneId)).plusDays(10));
+        token.setLastActivityAt(LocalDateTime.now(ZoneId.of(zoneId)));
 
         return repo.save(token);
     }
 
     public ApiResponse<?> refresh(String refreshTokenValue) {
 
-        RefreshToken token = repo.findByToken(refreshTokenValue)
-                .orElseThrow(() -> new ApiException(
-                        "Invalid session",
-                        HttpStatus.UNAUTHORIZED,
-                        ErrorCode.INVALID_SESSION));
+        RefreshToken token = getValidRefreshToken(refreshTokenValue);
 
-        // Check absolute expiry (30 days)
-        if (token.getExpiresAt().isBefore(Instant.now())) {
-            repo.delete(token);
-            throw new ApiException(
-                    "Session expired",
-                    HttpStatus.UNAUTHORIZED,
-                    ErrorCode.SESSION_EXPIRED);
-        }
-
-        if (token.getLastActivityAt()
-                .isBefore(Instant.now().minus(15, ChronoUnit.MINUTES))) {
-
-            repo.delete(token);
-            throw new ApiException(
-                    "Session Expired",
-                    HttpStatus.UNAUTHORIZED,
-                    ErrorCode.SESSION_EXPIRED);
-        }
-
-        token.setLastActivityAt(Instant.now());
+        token.setLastActivityAt(LocalDateTime.now(ZoneId.of(zoneId)));
+        repo.save(token);
 
         String newAccessToken =
                 authUtils.generateAcessToken(token.getUser());
 
         return ApiResponse.success(
-                "Login successful",
-                new LoginResponse(newAccessToken, refreshTokenValue),
+                "new token generated successfully successful",
+                new RefreshTokenResponse(newAccessToken),
                 200
         );
     }
@@ -83,7 +64,20 @@ public class RefreshTokenService {
     }
 
 
-    public RefreshToken validateAndUpdateActivity(String tokenValue) {
+    public void validateAndUpdateActivity(String tokenValue) {
+        RefreshToken token = getValidRefreshToken(tokenValue);
+//        System.out.println(token.getLastActivityAt());
+        LocalDateTime now = LocalDateTime.now(ZoneId.of(zoneId));
+
+        // Throttled DB update (every 2 minutes max)
+        if (token.getLastActivityAt().isBefore(now.minusMinutes(2))) {
+            token.setLastActivityAt(now);
+            repo.save(token);
+        }
+    }
+
+
+    private RefreshToken getValidRefreshToken(String tokenValue) {
 
         RefreshToken token = repo.findByToken(tokenValue)
                 .orElseThrow(() -> new ApiException(
@@ -91,8 +85,10 @@ public class RefreshTokenService {
                         HttpStatus.UNAUTHORIZED,
                         ErrorCode.INVALID_SESSION));
 
-        // Check absolute expiry (30 days)
-        if (token.getExpiresAt().isBefore(Instant.now())) {
+        LocalDateTime now = LocalDateTime.now(ZoneId.of(zoneId));
+
+        // Absolute expiry check
+        if (token.getExpiresAt().isBefore(now)) {
             repo.delete(token);
             throw new ApiException(
                     "Session expired",
@@ -100,10 +96,8 @@ public class RefreshTokenService {
                     ErrorCode.SESSION_EXPIRED);
         }
 
-        // Inactivity check (15 minutes)
-        if (token.getLastActivityAt()
-                .isBefore(Instant.now().minus(15, ChronoUnit.MINUTES))) {
-
+        // Inactivity expiry check
+        if (token.getLastActivityAt().isBefore(now.minusMinutes(15))) {
             repo.delete(token);
             throw new ApiException(
                     "Session expired due to inactivity",
@@ -111,17 +105,8 @@ public class RefreshTokenService {
                     ErrorCode.SESSION_EXPIRED);
         }
 
-        // Throttled DB update (every 5 minutes max)
-        if (token.getLastActivityAt()
-                .isBefore(Instant.now().minus(2, ChronoUnit.MINUTES))) {
-
-            token.setLastActivityAt(Instant.now());
-            repo.save(token);
-        }
-
         return token;
     }
-
 
 
 

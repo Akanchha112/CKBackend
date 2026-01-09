@@ -5,6 +5,7 @@ import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -12,7 +13,7 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-//@EntityListeners(AuditingEntityListener.class)
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "refresh_tokens",
     uniqueConstraints = {
     @UniqueConstraint(columnNames = "user_id")
@@ -31,10 +32,10 @@ public class RefreshToken {
     private User user;
 
     @Column(nullable = false)
-    private Instant expiresAt;
+    private LocalDateTime expiresAt;
 
     @Column(nullable = false)
-    private Instant lastActivityAt;
+    private LocalDateTime lastActivityAt;
 
 
 }

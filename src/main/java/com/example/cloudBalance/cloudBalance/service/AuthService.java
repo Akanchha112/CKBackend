@@ -10,6 +10,7 @@ import com.example.cloudBalance.cloudBalance.model.User;
 import com.example.cloudBalance.cloudBalance.repository.UserRepository;
 import com.example.cloudBalance.cloudBalance.security.AuthUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,11 +18,17 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
+//    @Autowired
     private final AuthenticationManager authManager;
+
     private final AuthUtils authUtils;
     private final RefreshTokenService refreshTokenService;
     private final UserRepository userRepository;
@@ -49,16 +56,18 @@ public class AuthService {
         User user = userRepository.findByEmailId(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+
+        user.setLastLogin(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
+        userRepository.save(user);
+
         String accessToken = authUtils.generateAcessToken(user);
 
         RefreshToken refreshToken = refreshTokenService.create(user);
 
         return ApiResponse.success(
                 "Login successful",
-                new LoginResponse(accessToken,refreshToken.getToken()),
+                new LoginResponse(accessToken,refreshToken.getToken(),user.getFirstName(),user.getLastName(),user.getRole()),
                 200
         );
     }
-
-
 }

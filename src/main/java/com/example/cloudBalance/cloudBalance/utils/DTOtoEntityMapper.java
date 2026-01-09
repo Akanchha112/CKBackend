@@ -1,5 +1,6 @@
-package com.example.cloudBalance.cloudBalance.service;
+package com.example.cloudBalance.cloudBalance.utils;
 
+import com.example.cloudBalance.cloudBalance.DTO.AccountResponse;
 import com.example.cloudBalance.cloudBalance.DTO.UpdateUserRequest;
 import com.example.cloudBalance.cloudBalance.DTO.UserRequest;
 import com.example.cloudBalance.cloudBalance.DTO.UserResponse;
@@ -8,12 +9,26 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Component
 public class DTOtoEntityMapper {
     @Autowired
     public PasswordEncoder passwordEncoder;
 
     public UserResponse mapToResponse(User user) {
+        List<AccountResponse> accounts =user.getAccounts() == null
+                ? List.of(): user.getAccounts()
+                .stream()
+                .map(a -> new AccountResponse(
+                        a.getId(),
+                        a.getAccountId(),
+                        a.getAccountName(),
+                        a.getArn()
+                ))
+                .toList();
+
         return new UserResponse(
                 user.getId(),
                 user.getFirstName(),
@@ -21,7 +36,8 @@ public class DTOtoEntityMapper {
                 user.getEmailId(),
                 user.getRole(),
                 user.getLastLogin(),
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                accounts
         );
     }
     public void updateEntity(User user, UpdateUserRequest dto, PasswordEncoder encoder) {

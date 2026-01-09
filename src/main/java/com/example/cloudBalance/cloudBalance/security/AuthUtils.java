@@ -20,18 +20,17 @@ public class AuthUtils {
     @Value("${jwt.secretKey}")
     private String jwtSecretKey;
 
-    private SecretKey getSecretKey(){
+    private SecretKey getSecretKey() {
         return Keys.hmacShaKeyFor(jwtSecretKey.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateAcessToken(User user){
+    public String generateAcessToken(User user) {
         String role = String.valueOf(user.getRole());
-
         return Jwts.builder()
                 .setSubject(user.getEmailId())
-                .claim("role",role)
+                .claim("role", role)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000*60*5))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 15))
                 .signWith(getSecretKey())
                 .compact();
     }

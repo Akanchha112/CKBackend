@@ -6,12 +6,14 @@ import com.example.cloudBalance.cloudBalance.DTO.UpdateUserRequest;
 import com.example.cloudBalance.cloudBalance.DTO.UserResponse;
 import com.example.cloudBalance.cloudBalance.exception.ApiException;
 import com.example.cloudBalance.cloudBalance.exception.ErrorCode;
+import com.example.cloudBalance.cloudBalance.model.Account;
 import com.example.cloudBalance.cloudBalance.model.RoleType;
 import com.example.cloudBalance.cloudBalance.model.User;
+import com.example.cloudBalance.cloudBalance.repository.AccountRepository;
 import com.example.cloudBalance.cloudBalance.repository.UserRepository;
+import com.example.cloudBalance.cloudBalance.utils.DTOtoEntityMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +25,7 @@ public class UserService {
     public final UserRepository userrepo;
     public final PasswordEncoder passwordEncoder;
     public final DTOtoEntityMapper dtOtoEntityMapper;
+    public final AccountRepository accountRepository;
 
     public ApiResponse<?> addUser(UserRequest userRequest){
         if (userrepo.findByEmailId(userRequest.emailId()).isPresent()) {
@@ -42,7 +45,18 @@ public class UserService {
                     ErrorCode.INVALID_ROLE
             );
         }
+
         User user=dtOtoEntityMapper.mapToEntity(userRequest);
+
+        //save account when ROLE is CUSTOMER
+        if(role.equals(RoleType.CUSTOMER)){
+            List<Long> account=userRequest.accountIds();
+            if (!account.isEmpty()) {
+                List<Account> fetchedaccount = accountRepository.findByAccountIdIn(account);
+                user.setAccounts(fetchedaccount);
+            }
+        }
+
         userrepo.save(user);
         return ApiResponse.success(
                 "User created successfully",
@@ -75,6 +89,27 @@ public class UserService {
 
         dtOtoEntityMapper.updateEntity(user, req, passwordEncoder);
 
+        RoleType newRole=req.role();
+
+        //save account when ROLE is CUSTOMER
+        if (newRole == RoleType.CUSTOMER) {
+
+            List<Long> accountIds = req.accountIds();
+
+            if (accountIds != null && !accountIds.isEmpty()) {
+                List<Account> fetchedAccounts =
+                        accountRepository.findByAccountIdIn(accountIds);
+                user.setAccounts(fetchedAccounts);
+            } else {
+                // CUSTOMER with no accounts clear explicitly
+                user.getAccounts().clear();
+            }
+
+        } else {
+            // ADMIN / READONLY must not have accounts
+            user.getAccounts().clear();
+        }
+
         userrepo.save(user);
 
         return ApiResponse.success(
@@ -84,4 +119,13 @@ public class UserService {
         );
     }
 
+    public UserResponse findUserById(Long id) {
+        User user = userrepo.findById(id)
+                .orElseThrow(() -> new ApiException(
+                        "User does not exist",
+                        HttpStatus.NOT_FOUND,
+                        ErrorCode.USER_NOT_FOUND
+                ));
+        return dtOtoEntityMapper.mapToResponse(user);
+    }
 }

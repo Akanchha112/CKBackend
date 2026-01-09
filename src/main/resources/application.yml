@@ -18,3 +18,9 @@ spring:
 
 jwt:
   secretKey: joiseju98uw94850w84309maskdmfoqur09mcaoidvnou9w8ut9
+
+debug: true
+
+app:
+  cors:
+    allowed-origins: http://localhost:5173

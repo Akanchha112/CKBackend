@@ -1,7 +1,8 @@
 package com.example.cloudBalance.cloudBalance.exception;
 
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
-
+@Getter
 public class ApiException extends RuntimeException {
 
     private final HttpStatus status;
@@ -13,11 +14,5 @@ public class ApiException extends RuntimeException {
         this.errorCode = errorCode;
     }
 
-    public HttpStatus getStatus() {
-        return status;
-    }
 
-    public ErrorCode getErrorCode() {
-        return errorCode;
-    }
 }

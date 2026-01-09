@@ -38,7 +38,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String token=tokenHeader.split(" ")[1];
 
         try {
-
             String email = authUtils.getEmailFromToken(token);
             String role = authUtils.getRoleFromToken(token);
 

@@ -4,12 +4,11 @@ import com.example.cloudBalance.cloudBalance.DTO.AccountResponse;
 import com.example.cloudBalance.cloudBalance.DTO.UpdateUserRequest;
 import com.example.cloudBalance.cloudBalance.DTO.UserRequest;
 import com.example.cloudBalance.cloudBalance.DTO.UserResponse;
-import com.example.cloudBalance.cloudBalance.model.User;
+import com.example.cloudBalance.cloudBalance.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -25,6 +24,7 @@ public class DTOtoEntityMapper {
                         a.getId(),
                         a.getAccountId(),
                         a.getAccountName(),
+
                         a.getArn()
                 ))
                 .toList();

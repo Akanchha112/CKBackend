@@ -1,14 +1,13 @@
 package com.example.cloudBalance.cloudBalance.security;
 
-import com.example.cloudBalance.cloudBalance.model.User;
+import com.example.cloudBalance.cloudBalance.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cglib.core.ClassInfo;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -17,8 +16,11 @@ import java.util.Date;
 
 @Component
 public class AuthUtils {
-    @Value("${jwt.secretKey}")
+    @Value("${jwt.secret_key}")
     private String jwtSecretKey;
+
+    @Value("${jwt.access-token-expiry-minutes}")
+    private long accessTokenExpiryMinutes;
 
     private SecretKey getSecretKey() {
         return Keys.hmacShaKeyFor(jwtSecretKey.getBytes(StandardCharsets.UTF_8));
@@ -30,7 +32,7 @@ public class AuthUtils {
                 .setSubject(user.getEmailId())
                 .claim("role", role)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 15))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * accessTokenExpiryMinutes))
                 .signWith(getSecretKey())
                 .compact();
     }
@@ -63,4 +65,14 @@ public class AuthUtils {
         return parseClaims(token).get("role", String.class);
     }
 
+    public String getRefreshToken(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+
+        for (Cookie cookie : request.getCookies()) {
+            if ("refreshToken".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
+    }
 }

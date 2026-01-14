@@ -1,14 +1,17 @@
 package com.example.cloudBalance.cloudBalance.controller;
 
+import com.example.cloudBalance.cloudBalance.DTO.AccountRequest;
 import com.example.cloudBalance.cloudBalance.DTO.AccountResponse;
 import com.example.cloudBalance.cloudBalance.DTO.ApiResponse;
-import com.example.cloudBalance.cloudBalance.model.Account;
+import com.example.cloudBalance.cloudBalance.entity.Account;
 import com.example.cloudBalance.cloudBalance.service.AccountService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,10 +25,10 @@ public class AccountController {
     private AccountService accountService;
 
 
-    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'READONLY', 'CUSTOMER')")
+    @GetMapping("/all")
     public ApiResponse<?> getAllAccounts() {
         List<AccountResponse> accounts = accountService.getAllAccounts();
-//        return ResponseEntity.ok(accounts);
         return ApiResponse.success(
                 "User fetched successfully",
                 accounts,
@@ -33,33 +36,30 @@ public class AccountController {
         );
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'READONLY', 'CUSTOMER')")
+    @GetMapping
+    public ApiResponse<List<AccountResponse>> getAccounts(Authentication authentication) {
+        String userEmail = authentication.getName();
+        List<AccountResponse> accounts = accountService.getAccountsForUser(userEmail);
+        return ApiResponse.success("Accounts fetched successfully", accounts, 200);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'READONLY', 'CUSTOMER')")
     @GetMapping("/{id}")
-    public ResponseEntity<Account> getAccountById(@PathVariable Long id) {
-        return accountService.getAccountById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ApiResponse<?> getAccountById(@PathVariable Long id) {
+        AccountResponse res= accountService.getAccountById(id);
+        return ApiResponse.success(
+                "Account fetched Successfully",
+                res,
+                200
+        );
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<Account> createAccount(@RequestBody Account account) {
-        Account createdAccount = accountService.createAccount(account);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdAccount);
+    public ApiResponse<AccountResponse> createAccount(@RequestBody @Valid AccountRequest account) {
+        AccountResponse createdAccount = accountService.createAccount(account);
+        return ApiResponse.success("Account Created Successfully",createdAccount,HttpStatus.CREATED.value());
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Account> updateAccount(@PathVariable Long id, @RequestBody Account account) {
-        try {
-            Account updatedAccount = accountService.updateAccount(id, account);
-            return ResponseEntity.ok(updatedAccount);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteAccount(@PathVariable Long id) {
-        accountService.deleteAccount(id);
-        return ResponseEntity.noContent().build();
-    }
 }

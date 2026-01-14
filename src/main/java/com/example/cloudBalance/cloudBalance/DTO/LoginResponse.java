@@ -1,6 +1,6 @@
 package com.example.cloudBalance.cloudBalance.DTO;
 
-import com.example.cloudBalance.cloudBalance.model.RoleType;
+import com.example.cloudBalance.cloudBalance.entity.RoleType;
 
 public record LoginResponse(
         String accessToken,

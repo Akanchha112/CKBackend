@@ -3,9 +3,11 @@ package com.example.cloudBalance.cloudBalance.exception;
 import com.example.cloudBalance.cloudBalance.DTO.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -41,23 +43,36 @@ public class GlobalExceptionHandler {
 
         ApiResponse<?> response = ApiResponse.error(
                 errors.toString(),
-                ErrorCode.INVALID_CREDENTIALS,
+                ErrorCode.INVALID_ARGUMENTS,
                 400
         );
         return ResponseEntity.badRequest().body(response);
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<?>> handleGeneric(Exception ex) {
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<?>> handleJsonParseError(HttpMessageNotReadableException ex) {
 
-        ApiResponse<?> response = ApiResponse.error(
-                "Internal server error",
-                ErrorCode.INTERNAL_ERROR,
-                500
+        return ResponseEntity.badRequest().body(
+                ApiResponse.error(
+                        "Invalid request body",
+                        ErrorCode.INVALID_ARGUMENTS,
+                        400
+                )
         );
-
-        return ResponseEntity.internalServerError().body(response);
     }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<?>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+
+        return ResponseEntity.badRequest().body(
+                ApiResponse.error(
+                        "Invalid parameter value",
+                        ErrorCode.INVALID_ARGUMENTS,
+                        400
+                )
+        );
+    }
+
 
 
 }

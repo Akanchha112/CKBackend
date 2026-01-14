@@ -1,6 +1,5 @@
-package com.example.cloudBalance.cloudBalance.model;
+package com.example.cloudBalance.cloudBalance.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;

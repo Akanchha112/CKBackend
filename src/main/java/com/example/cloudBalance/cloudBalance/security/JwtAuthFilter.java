@@ -1,7 +1,5 @@
 package com.example.cloudBalance.cloudBalance.security;
 
-import com.example.cloudBalance.cloudBalance.model.RefreshToken;
-import com.example.cloudBalance.cloudBalance.model.User;
 import com.example.cloudBalance.cloudBalance.repository.UserRepository;
 import com.example.cloudBalance.cloudBalance.service.RefreshTokenService;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -29,15 +27,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         final String tokenHeader=request.getHeader("Authorization");
-        String refreshHeader = request.getHeader("X-Refresh-Token");
-        if(tokenHeader==null || !tokenHeader.startsWith("Bearer")){
+        String refreshHeader = authUtils.getRefreshToken(request);
+
+        if(tokenHeader==null || !tokenHeader.startsWith("Bearer ")){
             filterChain.doFilter(request,response );
             return;
         }
 
-        String token=tokenHeader.split(" ")[1];
+        String token=tokenHeader.substring(7);
 
         try {
+            if (refreshHeader != null) {
+                refreshTokenService.validateAndUpdateActivity(refreshHeader);
+            }
+
             String email = authUtils.getEmailFromToken(token);
             String role = authUtils.getRoleFromToken(token);
 
@@ -48,10 +51,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     new UsernamePasswordAuthenticationToken(email, null, authorities);
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            if (refreshHeader != null) {
-                refreshTokenService.validateAndUpdateActivity(refreshHeader);
-            }
 
         } catch (ExpiredJwtException e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

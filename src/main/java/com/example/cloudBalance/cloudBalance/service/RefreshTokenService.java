@@ -1,16 +1,16 @@
 package com.example.cloudBalance.cloudBalance.service;
 
 import com.example.cloudBalance.cloudBalance.DTO.ApiResponse;
-import com.example.cloudBalance.cloudBalance.DTO.LoginResponse;
 import com.example.cloudBalance.cloudBalance.DTO.RefreshTokenResponse;
 import com.example.cloudBalance.cloudBalance.exception.ApiException;
 import com.example.cloudBalance.cloudBalance.exception.ErrorCode;
-import com.example.cloudBalance.cloudBalance.model.RefreshToken;
-import com.example.cloudBalance.cloudBalance.model.User;
+import com.example.cloudBalance.cloudBalance.entity.RefreshToken;
+import com.example.cloudBalance.cloudBalance.entity.User;
 import com.example.cloudBalance.cloudBalance.repository.RefreshTokenRepository;
 import com.example.cloudBalance.cloudBalance.security.AuthUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +26,14 @@ public class RefreshTokenService {
     private final RefreshTokenRepository repo;
     private final AuthUtils authUtils;
 
+    @Value("${jwt.refresh-token-expiry-days}")
+    private long refreshTokenExpiryDays;
 
+    @Value("${jwt.refresh-token-inactivity-minutes}")
+    private long inactivityExpiryMinutes;
+
+    @Value("${jwt.refresh-token-db-update-throttle-minutes}")
+    private long dbUpdateThrottleMinutes;
 
     @Transactional
     public RefreshToken create(User user) {
@@ -36,7 +43,7 @@ public class RefreshTokenService {
         RefreshToken token = existing.orElse(new RefreshToken());
         token.setUser(user);
         token.setToken(UUID.randomUUID().toString());
-        token.setExpiresAt(LocalDateTime.now(ZoneId.of(zoneId)).plusDays(10));
+        token.setExpiresAt(LocalDateTime.now(ZoneId.of(zoneId)).plusDays(refreshTokenExpiryDays));
         token.setLastActivityAt(LocalDateTime.now(ZoneId.of(zoneId)));
 
         return repo.save(token);
@@ -58,7 +65,10 @@ public class RefreshTokenService {
                 200
         );
     }
-
+    public void deleteRefreshToken(String token) {
+        repo.findByToken(token)
+                .ifPresent(repo::delete);
+    }
     public void logout(String refreshToken) {
         repo.deleteByToken(refreshToken);
     }
@@ -66,11 +76,12 @@ public class RefreshTokenService {
 
     public void validateAndUpdateActivity(String tokenValue) {
         RefreshToken token = getValidRefreshToken(tokenValue);
+
 //        System.out.println(token.getLastActivityAt());
         LocalDateTime now = LocalDateTime.now(ZoneId.of(zoneId));
 
         // Throttled DB update (every 2 minutes max)
-        if (token.getLastActivityAt().isBefore(now.minusMinutes(2))) {
+        if (token.getLastActivityAt().isBefore(now.minusMinutes(dbUpdateThrottleMinutes))) {
             token.setLastActivityAt(now);
             repo.save(token);
         }
@@ -81,9 +92,9 @@ public class RefreshTokenService {
 
         RefreshToken token = repo.findByToken(tokenValue)
                 .orElseThrow(() -> new ApiException(
-                        "Invalid session",
-                        HttpStatus.UNAUTHORIZED,
-                        ErrorCode.INVALID_SESSION));
+                        "Session Not Found",
+                        HttpStatus.NOT_FOUND,
+                        ErrorCode.SESSION_NOT_FOUND));
 
         LocalDateTime now = LocalDateTime.now(ZoneId.of(zoneId));
 
@@ -97,7 +108,7 @@ public class RefreshTokenService {
         }
 
         // Inactivity expiry check
-        if (token.getLastActivityAt().isBefore(now.minusMinutes(15))) {
+        if (token.getLastActivityAt().isBefore(now.minusMinutes(inactivityExpiryMinutes))) {
             repo.delete(token);
             throw new ApiException(
                     "Session expired due to inactivity",

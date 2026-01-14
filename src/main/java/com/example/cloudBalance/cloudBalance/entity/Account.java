@@ -1,14 +1,15 @@
-package com.example.cloudBalance.cloudBalance.model;
+package com.example.cloudBalance.cloudBalance.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
+@Builder
 @Entity
 @Table(name = "accounts")
 @Data

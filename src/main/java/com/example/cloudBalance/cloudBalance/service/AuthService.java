@@ -5,22 +5,23 @@ import com.example.cloudBalance.cloudBalance.DTO.LoginRequest;
 import com.example.cloudBalance.cloudBalance.DTO.LoginResponse;
 import com.example.cloudBalance.cloudBalance.exception.ApiException;
 import com.example.cloudBalance.cloudBalance.exception.ErrorCode;
-import com.example.cloudBalance.cloudBalance.model.RefreshToken;
-import com.example.cloudBalance.cloudBalance.model.User;
+import com.example.cloudBalance.cloudBalance.entity.RefreshToken;
+import com.example.cloudBalance.cloudBalance.entity.User;
 import com.example.cloudBalance.cloudBalance.repository.UserRepository;
 import com.example.cloudBalance.cloudBalance.security.AuthUtils;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PostMapping;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
@@ -50,7 +51,7 @@ public class AuthService {
         }
     }
 
-    public ApiResponse<?> login(LoginRequest req) {
+    public LoginResponse login(LoginRequest req) {
         UserDetails userDetails=authenticate(req);
 
         User user = userRepository.findByEmailId(userDetails.getUsername())
@@ -64,10 +65,10 @@ public class AuthService {
 
         RefreshToken refreshToken = refreshTokenService.create(user);
 
-        return ApiResponse.success(
-                "Login successful",
-                new LoginResponse(accessToken,refreshToken.getToken(),user.getFirstName(),user.getLastName(),user.getRole()),
-                200
-        );
+        return new LoginResponse(accessToken,refreshToken.getToken(),user.getFirstName(),user.getLastName(),user.getRole());
+
     }
+
+
+
 }

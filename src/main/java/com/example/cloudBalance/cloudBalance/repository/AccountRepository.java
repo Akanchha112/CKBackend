@@ -1,6 +1,6 @@
 package com.example.cloudBalance.cloudBalance.repository;
 
-import com.example.cloudBalance.cloudBalance.model.Account;
+import com.example.cloudBalance.cloudBalance.entity.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -6,9 +6,9 @@ import com.example.cloudBalance.cloudBalance.DTO.UpdateUserRequest;
 import com.example.cloudBalance.cloudBalance.DTO.UserResponse;
 import com.example.cloudBalance.cloudBalance.exception.ApiException;
 import com.example.cloudBalance.cloudBalance.exception.ErrorCode;
-import com.example.cloudBalance.cloudBalance.model.Account;
-import com.example.cloudBalance.cloudBalance.model.RoleType;
-import com.example.cloudBalance.cloudBalance.model.User;
+import com.example.cloudBalance.cloudBalance.entity.Account;
+import com.example.cloudBalance.cloudBalance.entity.RoleType;
+import com.example.cloudBalance.cloudBalance.entity.User;
 import com.example.cloudBalance.cloudBalance.repository.AccountRepository;
 import com.example.cloudBalance.cloudBalance.repository.UserRepository;
 import com.example.cloudBalance.cloudBalance.utils.DTOtoEntityMapper;
@@ -18,6 +18,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,8 +28,9 @@ public class UserService {
     public final PasswordEncoder passwordEncoder;
     public final DTOtoEntityMapper dtOtoEntityMapper;
     public final AccountRepository accountRepository;
+    public final AccountService accountService;
 
-    public ApiResponse<?> addUser(UserRequest userRequest){
+    public UserResponse addUser(UserRequest userRequest){
         if (userrepo.findByEmailId(userRequest.emailId()).isPresent()) {
             throw new ApiException(
                     "Email already exists",
@@ -50,35 +53,24 @@ public class UserService {
 
         //save account when ROLE is CUSTOMER
         if(role.equals(RoleType.CUSTOMER)){
-            List<Long> account=userRequest.accountIds();
-            if (!account.isEmpty()) {
-                List<Account> fetchedaccount = accountRepository.findByAccountIdIn(account);
-                user.setAccounts(fetchedaccount);
-            }
+            List<Account> fetchedaccount=accountService.validateAndFetchAccounts(userRequest.accountIds());
+            user.setAccounts(fetchedaccount);
         }
 
         userrepo.save(user);
-        return ApiResponse.success(
-                "User created successfully",
-                dtOtoEntityMapper.mapToResponse(user),
-                HttpStatus.CREATED.value()
-        );
+        return dtOtoEntityMapper.mapToResponse(user);
     }
 
-    public ApiResponse<?> getAllUser(){
+    public List<UserResponse> getAllUser(){
         List<UserResponse> users = userrepo.findAll()
                 .stream()
                 .map(dtOtoEntityMapper::mapToResponse)
                 .toList();
 
-        return ApiResponse.success(
-                "Users fetched successfully",
-                users,
-                200
-        );
+        return users;
     }
 
-    public ApiResponse<?> editUser(Long id, UpdateUserRequest req) {
+    public UserResponse editUser(Long id, UpdateUserRequest req) {
 
         User user = userrepo.findById(id)
                 .orElseThrow(() -> new ApiException(
@@ -95,16 +87,13 @@ public class UserService {
         if (newRole == RoleType.CUSTOMER) {
 
             List<Long> accountIds = req.accountIds();
-
             if (accountIds != null && !accountIds.isEmpty()) {
-                List<Account> fetchedAccounts =
-                        accountRepository.findByAccountIdIn(accountIds);
+                List<Account> fetchedAccounts =accountService.validateAndFetchAccounts(accountIds);
                 user.setAccounts(fetchedAccounts);
             } else {
                 // CUSTOMER with no accounts clear explicitly
                 user.getAccounts().clear();
             }
-
         } else {
             // ADMIN / READONLY must not have accounts
             user.getAccounts().clear();
@@ -112,11 +101,7 @@ public class UserService {
 
         userrepo.save(user);
 
-        return ApiResponse.success(
-                "User updated successfully",
-                dtOtoEntityMapper.mapToResponse(user),
-                HttpStatus.OK.value()
-        );
+        return dtOtoEntityMapper.mapToResponse(user);
     }
 
     public UserResponse findUserById(Long id) {

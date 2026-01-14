@@ -1,6 +1,6 @@
 package com.example.cloudBalance.cloudBalance.security;
 
-import com.example.cloudBalance.cloudBalance.model.User;
+import com.example.cloudBalance.cloudBalance.entity.User;
 import com.example.cloudBalance.cloudBalance.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;

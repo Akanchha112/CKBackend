@@ -1,4 +1,4 @@
-package com.example.cloudBalance.cloudBalance.model;
+package com.example.cloudBalance.cloudBalance.entity;
 
 public enum RoleType {
 //    ADMIN("admin"),

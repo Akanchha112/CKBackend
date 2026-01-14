@@ -1,7 +1,7 @@
 package com.example.cloudBalance.cloudBalance.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import com.example.cloudBalance.cloudBalance.model.User;
+import com.example.cloudBalance.cloudBalance.entity.User;
 
 import java.util.Optional;
 

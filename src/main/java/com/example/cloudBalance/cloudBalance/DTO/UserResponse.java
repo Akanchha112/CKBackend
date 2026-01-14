@@ -1,7 +1,6 @@
 package com.example.cloudBalance.cloudBalance.DTO;
 
-import com.example.cloudBalance.cloudBalance.model.Account;
-import com.example.cloudBalance.cloudBalance.model.RoleType;
+import com.example.cloudBalance.cloudBalance.entity.RoleType;
 import java.time.LocalDateTime;
 import java.util.List;
 

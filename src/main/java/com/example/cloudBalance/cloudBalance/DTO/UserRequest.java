@@ -1,6 +1,6 @@
 package com.example.cloudBalance.cloudBalance.DTO;
 
-import com.example.cloudBalance.cloudBalance.model.RoleType;
+import com.example.cloudBalance.cloudBalance.entity.RoleType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 

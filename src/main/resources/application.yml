@@ -3,7 +3,7 @@ spring:
     name: cloudBalance
 
   datasource:
-    url: jdbc:mysql://localhost:3306/cloudBalance
+    jdbc-url: jdbc:mysql://localhost:3306/cloudBalance
     username: root
     password: YourPassword123!
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -17,10 +17,24 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
 
 jwt:
-  secretKey: joiseju98uw94850w84309maskdmfoqur09mcaoidvnou9w8ut9
+  secret_key: joiseju98uw94850w84309maskdmfoqur09mcaoidvnou9w8ut9
+  access-token-expiry-minutes: 15
+  refresh-token-expiry-days: 5
+  refresh-token-inactivity-minutes: 15
+  refresh-token-db-update-throttle-minutes: 1
+
 
 debug: true
 
 app:
   cors:
-    allowed-origins: http://localhost:5173
+    allowed-origins: http://localhost:5174
+
+snowflake:
+  url: jdbc:snowflake://https://jgwazim-wu66490.snowflakecomputing.com/
+  username: cost_read_user
+  password: aws_cost_report_read_only
+  warehouse: snowflake_learning_wh
+  database: snowflake_learning_db
+  schema: AWS_CUR
+  role: cost_db_readonly
